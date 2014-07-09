@@ -4,13 +4,14 @@
 		<title>3D Table Test</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>canvas {width: 100%; height: 100%; color: aliceblue}</style>
+		<style>canvas {width: 100%; height: 100%}</style>
 	</head>
 
 	
 	<body>
 
 		<script src="js/three.min.js"></script>
+		<script src="js/Detector.js"></script>
 		<script src="js/physi.js"></script>
 		<script src="js/csg.js"></script>
 		<script src="js/ThreeCSG.js"></script>
@@ -37,6 +38,7 @@
 		var windowHalfY = window.innerHeight / 2;
 
 		// spacebrew stuff
+		
 		var ax = 0, ay = 0;
 		// var random_id = Math.floor((Math.random() * 1000) + 1);
 		var sb = new Spacebrew.Client("50.112.244.54", "labyrinth prototype ");
@@ -78,7 +80,7 @@
 				directionalLight.position.set( 0, 0, 1 );
 				scene.add( directionalLight );
 
-				// texture
+				// loading manager
 
 				var manager = new THREE.LoadingManager();
 				manager.onProgress = function ( item, loaded, total ) {
@@ -86,6 +88,9 @@
 					console.log( item, loaded, total );
 
 				};
+
+				// texture - not used yet
+				/*
 
 				var balsa_texture = new THREE.Texture();
 				var ball_texture = new THREE.Texture();
@@ -95,8 +100,10 @@
 
 					balsa_texture.image = image;
 					balsa_texture.needsUpdate = true;
-
 				} );
+				
+				*/
+
 
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
 				// but until I can figure out how to apply physics to a hole it's unused for now
@@ -112,8 +119,14 @@
 				var subtract_bsp = box_bsp.subtract(cyl_bsp);
 				var result = subtract_bsp.toGeometry();
 
-				// physijs material, arguments are texture, friction, bounciness
-				var box_material = Physijs.createMaterial( new THREE.MeshNormalMaterial(), 0.8, 0);
+				// physijs material
+				var box_material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'textures/balsa.jpg' ) }), 
+					0.8, // friction
+					0  // bounciness
+				);
+				box_material.map.wrapS = box_material.map.wrapT = THREE.RepeatWrapping;
+				box_material.map.repeat.set( 3, 3 );
 
 				// creates ground with hole:
 				//ground = new Physijs.BoxMesh(result, box_material, 0);
@@ -127,7 +140,11 @@
 
 				// ball
 				var ball_geometry = new THREE.SphereGeometry(5,32,32);
-				var ball_material = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x00ff00 }), .4, 0);
+				var ball_material = Physijs.createMaterial(
+					new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+				 	0.4, // friction
+				 	0  // bounciness
+				 );
 
 				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
 				ball.position.y = 20;
@@ -137,7 +154,15 @@
 
 
 				// renderer and listeners
-				renderer = new THREE.WebGLRenderer();
+
+				// Detect for WebGL capability - if not, use canvas renderer
+				if (Detector.webgl){
+					renderer = new THREE.WebGLRenderer({antialias: true});
+				}
+				else {
+					renderer = new THREE.CanvasRenderer();
+				}
+				
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
 
