@@ -32,6 +32,7 @@
 		var container, stats;
 		var camera, scene, renderer, ball;
 		var mouseX = 0, mouseY = 0;
+		var tempRotX = 0, tempRotZ = 0;
 
 
 		var windowHalfX = window.innerWidth / 2;
@@ -74,10 +75,12 @@
 				scene.setGravity(new THREE.Vector3(0,-30,0)); 
 
 				var ambient = new THREE.AmbientLight( 0x101030 );
-				scene.add( ambient );
+				//scene.add( ambient );
 
 				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-				directionalLight.position.set( 0, 0, 1 );
+				directionalLight.position.set( 0, 1, 0 );
+				directionalLight.castShadow = true;
+				directionalLight.shadowCameraVisible = true;
 				scene.add( directionalLight );
 
 				// loading manager
@@ -88,19 +91,6 @@
 					console.log( item, loaded, total );
 
 				};
-
-				// texture - not used yet
-				var balsa_texture = new THREE.Texture();
-				var ball_texture = new THREE.Texture();
-
-				var loader = new THREE.ImageLoader( manager );
-				loader.load( 'textures/balsa.jpg', function ( image ) {
-				balsa_texture.image = image;
-				balsa_texture.needsUpdate = true;
-				} );
-				
-				
-
 
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
 				// but until I can figure out how to apply physics to a hole it's unused for now
@@ -189,20 +179,20 @@
 
 				// W: tilt phone up (neg y)
 					if (e.keyCode == 87) {
-						ground.rotation.x +=.05;
+						tempRotX +=.05;
 					}
 
 				// S: tilt phone down (pos y)
 					if (e.keyCode == 83) {
-						ground.rotation.x -=.05;
+						tempRotX -=.05;
 					}
 				// A: tilt phone right (pos x)
 					if (e.keyCode == 65) {
-						ground.rotation.z -=.05;
+						tempRotZ -=.05;
 					}
 				// D: tilt phone left (neg x)
 					if (e.keyCode == 68) {
-						ground.rotation.z +=.05;
+						tempRotZ +=.05;
 					}
 
 			}
@@ -224,16 +214,19 @@
 			}
 
 			function render() {
+				ground.rotation.z = tempRotZ;
+				ground.rotation.x = tempRotX;
 
 				ground.__dirtyRotation = true; // needed for physijs rotation
 				ground.rotation.z -= ax/600;
 				ground.rotation.x += ay/600;
 
+
+
 				// mouse camera movement:
 
 				//camera.position.x += ( mouseX - camera.position.x ) * .05;
 				//camera.position.y += ( - mouseY - camera.position.y ) * .05;
-
 				camera.lookAt( scene.position );
 
 				scene.simulate();  // run physics
