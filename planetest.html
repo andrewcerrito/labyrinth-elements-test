@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>3D Table Test</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>canvas {width: 100%; height: 100%; color: aliceblue}</style>
+	</head>
+
+	
+	<body>
+
+		<script src="js/three.min.js"></script>
+		<script src="js/physi.js"></script>
+		<script src="js/csg.js"></script>
+		<script src="js/ThreeCSG.js"></script>
+		<script src="js/sb-1.4.1.js"></script>
+
+
+
+		<script>
+
+// ************ DECLARATIONS **************
+
+		//physijs variables
+
+		//'use strict';
+		Physijs.scripts.worker = 'js/physijs_worker.js';
+		Physijs.scripts.ammo = 'ammo.js';
+
+		var container, stats;
+		var camera, scene, renderer, ball;
+		var mouseX = 0, mouseY = 0;
+
+
+		var windowHalfX = window.innerWidth / 2;
+		var windowHalfY = window.innerHeight / 2;
+
+		// spacebrew stuff
+		var ax = 0, ay = 0;
+		// var random_id = Math.floor((Math.random() * 1000) + 1);
+		var sb = new Spacebrew.Client("50.112.244.54", "labyrinth prototype ");
+		sb.addSubscribe("tilt_x", "string");
+		sb.addSubscribe("tilt_y", "string");
+		sb.onStringMessage = onStringMessage;
+		sb.connect();
+		console.log("sb connect");
+
+
+// ********* PROGRAM ***********
+
+		init();
+		animate();
+
+// ********* FUNCTIONS **********
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				// camera
+
+				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.x = 0;
+				camera.position.y = 180;
+				camera.position.z = 100;
+
+				// scene
+
+				scene = new Physijs.Scene();
+				scene.setGravity(new THREE.Vector3(0,-30,0)); 
+
+				var ambient = new THREE.AmbientLight( 0x101030 );
+				scene.add( ambient );
+
+				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				directionalLight.position.set( 0, 0, 1 );
+				scene.add( directionalLight );
+
+				// texture
+
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+					console.log( item, loaded, total );
+
+				};
+
+				var balsa_texture = new THREE.Texture();
+				var ball_texture = new THREE.Texture();
+
+				var loader = new THREE.ImageLoader( manager );
+				loader.load( 'textures/balsa.jpg', function ( image ) {
+
+					balsa_texture.image = image;
+					balsa_texture.needsUpdate = true;
+
+				} );
+
+				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
+				// but until I can figure out how to apply physics to a hole it's unused for now
+
+				var box = new THREE.BoxGeometry(150,1,150);
+				var box_mesh = new Physijs.BoxMesh(box);
+				var box_bsp = new ThreeBSP(box_mesh);
+
+				var cylinder = new THREE.CylinderGeometry(10,10,70,32);
+				var cyl_mesh = new Physijs.CylinderMesh(cylinder);
+				var cyl_bsp = new ThreeBSP(cyl_mesh);
+
+				var subtract_bsp = box_bsp.subtract(cyl_bsp);
+				var result = subtract_bsp.toGeometry();
+
+				// physijs material, arguments are texture, friction, bounciness
+				var box_material = Physijs.createMaterial( new THREE.MeshNormalMaterial(), 0.8, 0);
+
+				// creates ground with hole:
+				//ground = new Physijs.BoxMesh(result, box_material, 0);
+
+				// ground without hole:
+				ground = new Physijs.BoxMesh(box,box_material,0);
+
+				ground.receiveShadow = true;
+				scene.add(ground);
+				
+
+				// ball
+				var ball_geometry = new THREE.SphereGeometry(5,32,32);
+				var ball_material = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x00ff00 }), .4, 0);
+
+				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
+				ball.position.y = 20;
+				ball.castShadow = true;
+				scene.add( ball );
+
+
+
+				// renderer and listeners
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				// KEYBOARD LISTENER FOR DEBUG - DELETE LATER:
+				document.addEventListener("keydown",doKeyDown,false);
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			// KEYBOARD DEBUG CONTROLS - COMMENT OUT LATER
+			function doKeyDown (e){
+
+				// W: tilt phone up (neg y)
+					if (e.keyCode == 87) {
+						ground.rotation.x +=.05;
+					}
+
+				// S: tilt phone down (pos y)
+					if (e.keyCode == 83) {
+						ground.rotation.x -=.05;
+					}
+				// A: tilt phone right (pos x)
+					if (e.keyCode == 65) {
+						ground.rotation.z -=.05;
+					}
+				// D: tilt phone left (neg x)
+					if (e.keyCode == 68) {
+						ground.rotation.z +=.05;
+					}
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+
+			}
+
+			function render() {
+
+				ground.__dirtyRotation = true; // needed for physijs rotation
+				ground.rotation.z -= ax/600;
+				ground.rotation.x += ay/600;
+
+				// mouse camera movement:
+
+				//camera.position.x += ( mouseX - camera.position.x ) * .05;
+				//camera.position.y += ( - mouseY - camera.position.y ) * .05;
+
+				camera.lookAt( scene.position );
+
+				scene.simulate();  // run physics
+				renderer.render( scene, camera );  // render scene
+
+			}
+
+			function onStringMessage(name, value) {
+				if (name == "tilt_x") {
+					ax = parseFloat(value);
+				}
+				else if (name == "tilt_y") {
+					ay = parseFloat(value);
+				}
+				console.log("test");
+				console.log("x: " + ax + " y: " + ay );
+			}
+
+		</script>
+
+	</body>
+</html>
