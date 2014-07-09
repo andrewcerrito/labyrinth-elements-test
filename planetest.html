@@ -62,83 +62,6 @@
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
-				// camera
-
-				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.x = 0;
-				camera.position.y = 180;
-				camera.position.z = 100;
-
-				// scene
-
-				scene = new Physijs.Scene();
-				scene.setGravity(new THREE.Vector3(0,-30,0)); 
-
-				var ambient = new THREE.AmbientLight( 0x101030 );
-				//scene.add( ambient );
-
-				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-				directionalLight.position.set( 0, 1, 0 );
-				directionalLight.castShadow = true;
-				directionalLight.shadowCameraVisible = true;
-				scene.add( directionalLight );
-
-				// loading manager
-
-				var manager = new THREE.LoadingManager();
-				manager.onProgress = function ( item, loaded, total ) {
-
-					console.log( item, loaded, total );
-
-				};
-
-				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
-				// but until I can figure out how to apply physics to a hole it's unused for now
-
-				var box = new THREE.BoxGeometry(150,1,150);
-				var box_mesh = new Physijs.BoxMesh(box);
-				var box_bsp = new ThreeBSP(box_mesh);
-
-				var cylinder = new THREE.CylinderGeometry(10,10,70,32);
-				var cyl_mesh = new Physijs.CylinderMesh(cylinder);
-				var cyl_bsp = new ThreeBSP(cyl_mesh);
-
-				var subtract_bsp = box_bsp.subtract(cyl_bsp);
-				var result = subtract_bsp.toGeometry();
-
-				// physijs material
-				var box_material = Physijs.createMaterial(
-					new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
-					0.8, // friction
-					0  // bounciness
-				);
-				box_material.map.wrapS = box_material.map.wrapT = THREE.RepeatWrapping;
-				//box_material.map.repeat.set( 3, 3 );
-
-				// creates ground with hole:
-				//ground = new Physijs.BoxMesh(result, box_material, 0);
-
-				// ground without hole:
-				ground = new Physijs.BoxMesh(box,box_material,0);
-
-				//ground.receiveShadow = true;
-				scene.add(ground);
-				
-
-				// ball
-				var ball_geometry = new THREE.SphereGeometry(5,32,32);
-				var ball_material = Physijs.createMaterial(
-					new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
-				 	0.4, // friction
-				 	0  // bounciness
-				 );
-
-				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
-				ball.position.y = 20;
-				ball.castShadow = true;
-				scene.add( ball );
-
-
 
 				// renderer and listeners
 
@@ -159,6 +82,120 @@
 
 				// KEYBOARD LISTENER FOR DEBUG - DELETE LATER:
 				document.addEventListener("keydown",doKeyDown,false);
+
+
+				// camera
+
+				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.x = 0;
+				camera.position.y = 180;
+				camera.position.z = 100;
+
+
+				// scene
+
+				scene = new Physijs.Scene();
+				scene.setGravity(new THREE.Vector3(0,-100,0)); 
+
+				var ambient = new THREE.AmbientLight( 0x101030 );
+				//scene.add( ambient );
+
+				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				directionalLight.position.set( 0, 10, 1);
+				directionalLight.castShadow = true;
+				directionalLight.shadowCameraVisible = true;
+				scene.add( directionalLight );
+
+
+				// loading manager - unused for now
+
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+				console.log( item, loaded, total );
+				};
+
+
+				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
+				// but until I can figure out how to apply physics to a hole it's unused for now
+
+				var box_w = 150, box_d = 1, box_h = 150;
+				var box = new THREE.BoxGeometry(box_w, box_d, box_h);
+				var box_mesh = new Physijs.BoxMesh(box);
+				var box_bsp = new ThreeBSP(box_mesh);
+
+				var cylinder = new THREE.CylinderGeometry(10,10,70,32);
+				var cyl_mesh = new Physijs.CylinderMesh(cylinder);
+				var cyl_bsp = new ThreeBSP(cyl_mesh);
+
+				var subtract_bsp = box_bsp.subtract(cyl_bsp);
+				var result = subtract_bsp.toGeometry();
+
+				// ground material
+				var box_material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
+					0.8, 
+					0
+				);
+
+				ground = new Physijs.BoxMesh(box,box_material,0);
+				ground.receiveShadow = true;
+
+
+				// adding walls as child objects to ground
+
+				// wall material
+				var wall_material = Physijs.createMaterial(
+					new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
+					0.9, 
+					0
+				);
+
+				// wall geometries & meshes
+				var wall_w = 5, wall_d = 10, wall_h = 150;
+				var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
+				var horizWall = new THREE.BoxGeometry(wall_h-(2*wall_w), wall_d, wall_w);
+				
+				var leftWall = new Physijs.BoxMesh(vertWall,wall_material);
+				leftWall.position.x = ground.position.x - (box_w/2 - wall_w/2);
+				leftWall.position.y = ground.position.y + wall_d/2;
+				ground.add(leftWall);
+
+				var rightWall = new Physijs.BoxMesh(vertWall,wall_material);
+				rightWall.position.x = ground.position.x + (box_w/2 - wall_w/2);
+				rightWall.position.y = ground.position.y + wall_d/2;
+				ground.add(rightWall);
+
+				var topWall = new Physijs.BoxMesh(horizWall,wall_material);
+				topWall.position.z = ground.position.z - (box_h/2 - wall_w/2);
+				topWall.position.y = ground.position.y + wall_d/2;
+				ground.add(topWall);
+
+				var bottomWall = new Physijs.BoxMesh(horizWall,wall_material);
+				bottomWall.position.z = ground.position.z + (box_h/2 - wall_w/2);
+				bottomWall.position.y = ground.position.y + wall_d/2;
+				ground.add(bottomWall);
+
+
+				// creates ground with hole:
+				//ground = new Physijs.BoxMesh(result, box_material, 0);
+
+				// ground without hole:
+				scene.add(ground);
+				
+
+				// ball
+
+				var ball_geometry = new THREE.SphereGeometry(5,32,32);
+				var ball_material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+				 	0.9, // friction
+				 	0  // bounciness
+				 );
+
+				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
+				ball.position.y = 20;
+				ball.castShadow = true;
+				scene.add( ball );
 
 			}
 
