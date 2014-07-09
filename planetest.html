@@ -90,19 +90,16 @@
 				};
 
 				// texture - not used yet
-				/*
-
 				var balsa_texture = new THREE.Texture();
 				var ball_texture = new THREE.Texture();
 
 				var loader = new THREE.ImageLoader( manager );
 				loader.load( 'textures/balsa.jpg', function ( image ) {
-
-					balsa_texture.image = image;
-					balsa_texture.needsUpdate = true;
+				balsa_texture.image = image;
+				balsa_texture.needsUpdate = true;
 				} );
 				
-				*/
+				
 
 
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
@@ -121,12 +118,12 @@
 
 				// physijs material
 				var box_material = Physijs.createMaterial(
-					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'textures/balsa.jpg' ) }), 
+					new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
 					0.8, // friction
 					0  // bounciness
 				);
 				box_material.map.wrapS = box_material.map.wrapT = THREE.RepeatWrapping;
-				box_material.map.repeat.set( 3, 3 );
+				//box_material.map.repeat.set( 3, 3 );
 
 				// creates ground with hole:
 				//ground = new Physijs.BoxMesh(result, box_material, 0);
@@ -134,7 +131,7 @@
 				// ground without hole:
 				ground = new Physijs.BoxMesh(box,box_material,0);
 
-				ground.receiveShadow = true;
+				//ground.receiveShadow = true;
 				scene.add(ground);
 				
 
