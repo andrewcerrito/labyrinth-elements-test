@@ -255,10 +255,11 @@
 				ground.rotation.x = tempRotX;
 
 				ground.__dirtyRotation = true; // needed for physijs rotation
-				ground.rotation.z -= ax/600;
-				ground.rotation.x += ay/600;
+				// ground.rotation.z -= ax/600;
+				// ground.rotation.x += ay/600;
 
-
+				tempRotZ -= ax/1000;
+				tempRotX += ay/600;
 
 				// mouse camera movement:
 
