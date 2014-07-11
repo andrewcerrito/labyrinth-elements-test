@@ -114,7 +114,7 @@
 				console.log( item, loaded, total );
 				};
 
-
+/*
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
 				// but until I can figure out how to apply physics to a hole it's unused for now
 
@@ -130,16 +130,40 @@
 				var subtract_bsp = box_bsp.subtract(cyl_bsp);
 				var result = subtract_bsp.toGeometry();
 
+*/				
+
+				// load level layout
+				var level = levelLayout();
+				
+				// ground tile geometry
+
+				var box_w = 15, box_d = 1, box_h = 15;
+				var box = new THREE.BoxGeometry(box_w, box_d, box_h);
+				
 				// ground material
+
 				var box_material = Physijs.createMaterial(
 					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
 					0.8, 
 					0
 				);
 
+				// create piece to parent entire rest of board to, in order to make rotation less of a headache
+
+				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
+				parent_piece.__dirtyRotation = true;
+				parent_piece.position.x = -level[0].length * 5;
+    			parent_piece.position.y = -level.length * 5;
+    			scene.add(parent_piece);
+
+				
+
+				//for (int i = 0; )
+
+/*
 				ground = new Physijs.BoxMesh(box,box_material,0);
 				ground.receiveShadow = true;
-
+*/
 
 				// adding walls as child objects to ground
 
@@ -149,7 +173,7 @@
 					0.9, 
 					0
 				);
-
+/*
 				// wall geometries & meshes
 				var wall_w = 5, wall_d = 10, wall_h = 150;
 				var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
@@ -181,7 +205,7 @@
 
 				// ground without hole:
 				scene.add(ground);
-				
+*/			
 
 				// ball
 
@@ -198,6 +222,8 @@
 				scene.add( ball );
 
 			}
+
+
 
 			function onWindowResize() {
 
@@ -251,6 +277,11 @@
 			}
 
 			function render() {
+
+				parent_piece.rotation.z = tempRotZ;
+				parent_piece.rotation.x = tempRotX;
+				
+				/*
 				ground.rotation.z = tempRotZ;
 				ground.rotation.x = tempRotX;
 
@@ -260,7 +291,8 @@
 
 				tempRotZ -= ax/1000;
 				tempRotX += ay/600;
-
+				*/
+				
 				// mouse camera movement:
 
 				//camera.position.x += ( mouseX - camera.position.x ) * .05;
@@ -282,6 +314,21 @@
 				console.log("test");
 				console.log("x: " + ax + " y: " + ay );
 			}
+
+	function levelLayout() {
+		return [
+		[0, 1, 0, 0, 0, 2, 1, 0, 0, 0],
+		[0, 1, 0, 2, 0, 1, 1, 0, 3, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
+		[0, 2, 0, 1, 1, 0, 2, 0, 1, 1],
+		[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 2, 0, 1, 1, 0, 2, 0],
+		[1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+		[0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+		[0, 0, 0, 2, 0, 0, 0, 1, 2, 0],
+		[0, 0, 0, 1, 0, 0, 0, 1, 0, 0]
+		]
+	}
 
 		</script>
 
