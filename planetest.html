@@ -1,3 +1,8 @@
+<!-- Labyrinth Game -->
+<!-- Andrew Cerrito -->
+<!-- Grid code adapted from Yaroslav Bigus (http://ybigus.blogspot.com/) -->
+
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -39,7 +44,6 @@
 		var windowHalfY = window.innerHeight / 2;
 
 		// spacebrew stuff
-		
 		var ax = 0, ay = 0;
 		// var random_id = Math.floor((Math.random() * 1000) + 1);
 		var sb = new Spacebrew.Client("50.112.244.54", "labyrinth prototype ");
@@ -53,6 +57,10 @@
 // ********* PROGRAM ***********
 
 		init();
+		loadCamera();
+		loadScene();
+		loadBall();
+		loadGround();
 		animate();
 
 // ********* FUNCTIONS **********
@@ -61,7 +69,6 @@
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
-
 
 				// renderer and listeners
 
@@ -74,6 +81,7 @@
 				}
 				
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor(0x87CEEB);
 				container.appendChild( renderer.domElement );
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
@@ -82,37 +90,41 @@
 
 				// KEYBOARD LISTENER FOR DEBUG - DELETE LATER:
 				document.addEventListener("keydown",doKeyDown,false);
+			}
 
 
-				// camera
-
+			// camera - old values y 180 z 100
+			function loadCamera() {
 				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 2000 );
 				camera.position.x = 0;
 				camera.position.y = 180;
-				camera.position.z = 100;
+				camera.position.z = 200;
+			}
 
 
-				// scene
+			// scene
 
-				scene = new Physijs.Scene();
-				scene.setGravity(new THREE.Vector3(0,-100,0)); 
+			function loadScene() {
+			scene = new Physijs.Scene();
+			scene.setGravity(new THREE.Vector3(0,-100,0)); 
 
-				var ambient = new THREE.AmbientLight( 0x101030 );
+			var ambient = new THREE.AmbientLight( 0x101030 );
 				//scene.add( ambient );
 
-				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-				directionalLight.position.set( 0, 10, 1);
-				directionalLight.castShadow = true;
-				directionalLight.shadowCameraVisible = true;
-				scene.add( directionalLight );
+			var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+			directionalLight.position.set( 0, 10, 1);
+			directionalLight.castShadow = true;
+			directionalLight.shadowCameraVisible = true;
+			scene.add( directionalLight );
+			}
 
 
 				// loading manager - unused for now
 
-				var manager = new THREE.LoadingManager();
-				manager.onProgress = function ( item, loaded, total ) {
-				console.log( item, loaded, total );
-				};
+				// var manager = new THREE.LoadingManager();
+				// manager.onProgress = function ( item, loaded, total ) {
+				// console.log( item, loaded, total );
+				// };
 
 /*
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
@@ -131,34 +143,105 @@
 				var result = subtract_bsp.toGeometry();
 
 */				
-
+			function loadGround() {
+				
 				// load level layout
 				var level = levelLayout();
-				
-				// ground tile geometry
-
-				var box_w = 15, box_d = 1, box_h = 15;
-				var box = new THREE.BoxGeometry(box_w, box_d, box_h);
-				
-				// ground material
-
-				var box_material = Physijs.createMaterial(
+		
+				// shared ground + wall material
+				box_material = Physijs.createMaterial(
 					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
 					0.8, 
 					0
 				);
 
-				// create piece to parent entire rest of board to, in order to make rotation less of a headache
+				
+				// ground tile geometry
+				box_w = 15, box_d = 1, box_h = 15;
+				box = new THREE.BoxGeometry(box_w, box_d, box_h);
 
+				// define piece to parent entire rest of board to, in order to make rotation less of a headache
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
+				parent_piece.__dirtyPosition = true;
 				parent_piece.__dirtyRotation = true;
-				parent_piece.position.x = -level[0].length * 5;
-    			parent_piece.position.y = -level.length * 5;
-    			scene.add(parent_piece);
+				//parent_piece.position.x = -level[0].length * 5;
+    			//parent_piece.position.y = -level.length * 5;
+    			
+				
+				// read through level layout array and create rest of elements accordingly. parent them to parent piece
+				for (var i = 0; i < level.length; i++) {
+					for (var j = 0; j < level[i].length; j++) {
+						switch (level[i][j]) {
+			                case 0:
+			                    addFloor(j, i, level.length, level[i].length, scene);
+			                    break;
+			                case 1:
+			                    addWall(j, i, level.length, level[i].length, scene);
+			                    break;
+			                case 2:
+			                    addHole(j, i, level.length, level[i].length, scene);
+			                    break;
+			                case 3:
+			                    addGoal(j, i, level.length, level[i].length, scene);
+			                    break;
+			            }
+
+					}
+				}
+				
+
+				// add parent piece
+				scene.add(parent_piece);
+			}
+
+
+			function loadBall() {
+				var ball_geometry = new THREE.SphereGeometry(5,32,32);
+				var ball_material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+				 	0.9, // friction
+				 	0  // bounciness
+				 );
+
+				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
+				ball.position.y = 20;
+				ball.castShadow = true;
+				scene.add( ball );
+
+			}
 
 				
 
-				//for (int i = 0; )
+
+				function addFloor(x, z, rows, cols) {
+
+					var floor = new Physijs.BoxMesh(box, box_material, 0);
+					floor.position.x = x * box_w;
+					floor.position.z = z * box_h;
+					parent_piece.add(floor);
+
+				}
+
+				function addWall(x, z, rows, cols) {
+					// wall tile geometry
+					var wall_w = 15, wall_d = 10, wall_h = 15;
+					var wall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
+
+					var wall = new Physijs.BoxMesh(wall, box_material, 0);
+					wall.position.x = x * wall_w;
+					wall.position.z = z * wall_h;
+					wall.position.y = wall_d/2;
+					parent_piece.add(wall);
+
+				}
+
+				function addHole(x, z, rows, cols){
+
+				}
+
+				function addGoal(x, z, rows, cols){
+
+				}
 
 /*
 				ground = new Physijs.BoxMesh(box,box_material,0);
@@ -168,13 +251,15 @@
 				// adding walls as child objects to ground
 
 				// wall material
-				var wall_material = Physijs.createMaterial(
-					new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
-					0.9, 
-					0
-				);
-/*
+				// var wall_material = Physijs.createMaterial(
+				// 	new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
+				// 	0.9, 
+				// 	0
+				// );
+
 				// wall geometries & meshes
+				
+				/*
 				var wall_w = 5, wall_d = 10, wall_h = 150;
 				var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
 				var horizWall = new THREE.BoxGeometry(wall_h-(2*wall_w), wall_d, wall_w);
@@ -206,24 +291,6 @@
 				// ground without hole:
 				scene.add(ground);
 */			
-
-				// ball
-
-				var ball_geometry = new THREE.SphereGeometry(5,32,32);
-				var ball_material = Physijs.createMaterial(
-					new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
-				 	0.9, // friction
-				 	0  // bounciness
-				 );
-
-				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
-				ball.position.y = 20;
-				ball.castShadow = true;
-				scene.add( ball );
-
-			}
-
-
 
 			function onWindowResize() {
 
@@ -277,6 +344,9 @@
 			}
 
 			function render() {
+
+				parent_piece.__dirtyPosition = true;
+				parent_piece.__dirtyRotation = true;
 
 				parent_piece.rotation.z = tempRotZ;
 				parent_piece.rotation.x = tempRotX;
