@@ -146,7 +146,7 @@
 			function loadGround() {
 				
 				// load level layout
-				var level = levelLayout();
+				level = levelLayout();
 		
 				// shared ground + wall material
 				box_material = Physijs.createMaterial(
@@ -164,8 +164,10 @@
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
 				parent_piece.__dirtyPosition = true;
 				parent_piece.__dirtyRotation = true;
+				//parent_piece.position.x = (box_w * (level[0].length/2));
+				//parent_piece.position.y = 15;
 				//parent_piece.position.x = -level[0].length * 5;
-    			//parent_piece.position.y = -level.length * 5;
+    			
     			
 				
 				// read through level layout array and create rest of elements accordingly. parent them to parent piece
@@ -216,8 +218,11 @@
 				function addFloor(x, z, rows, cols) {
 
 					var floor = new Physijs.BoxMesh(box, box_material, 0);
-					floor.position.x = x * box_w;
-					floor.position.z = z * box_h;
+					
+					// adjustments so that parent piece is in center of gamefield for rotation purposes:
+					floor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
+					floor.position.z = -(box_h * (level[0].length/2) - box_h/2) + (z * box_h);
+					
 					parent_piece.add(floor);
 
 				}
@@ -225,11 +230,13 @@
 				function addWall(x, z, rows, cols) {
 					// wall tile geometry
 					var wall_w = 15, wall_d = 10, wall_h = 15;
-					var wall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
+					var wall_geometry = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
 
-					var wall = new Physijs.BoxMesh(wall, box_material, 0);
-					wall.position.x = x * wall_w;
-					wall.position.z = z * wall_h;
+					var wall = new Physijs.BoxMesh(wall_geometry, box_material, 0);
+
+					// same adjustments for rotation as above
+					wall.position.x = -(wall_w * (level[0].length/2) - wall_w/2) + (x * wall_w);
+					wall.position.z = -(wall_h * (level[0].length/2) - wall_h/2) + (z * wall_h);
 					wall.position.y = wall_d/2;
 					parent_piece.add(wall);
 
