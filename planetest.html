@@ -59,8 +59,9 @@
 		init();
 		loadCamera();
 		loadScene();
-		loadBall();
 		loadGround();
+		//loadOuterWalls();
+		loadBall();
 		animate();
 
 // ********* FUNCTIONS **********
@@ -162,8 +163,8 @@
 
 				// define piece to parent entire rest of board to, in order to make rotation less of a headache
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
-				parent_piece.__dirtyPosition = true;
-				parent_piece.__dirtyRotation = true;
+				//parent_piece.__dirtyPosition = true;
+				//parent_piece.__dirtyRotation = true;
 				//parent_piece.position.x = (box_w * (level[0].length/2));
 				//parent_piece.position.y = 15;
 				//parent_piece.position.x = -level[0].length * 5;
@@ -175,22 +176,25 @@
 					for (var j = 0; j < level[i].length; j++) {
 						switch (level[i][j]) {
 			                case 0:
-			                    addFloor(j, i, level.length, level[i].length, scene);
+			                    addFloor(j, i, level.length, level[i].length);
 			                    break;
 			                case 1:
-			                    addWall(j, i, level.length, level[i].length, scene);
+			                    addWall(j, i, level.length, level[i].length);
 			                    break;
 			                case 2:
-			                    addHole(j, i, level.length, level[i].length, scene);
+			                    addHole(j, i, level.length, level[i].length);
 			                    break;
 			                case 3:
-			                    addGoal(j, i, level.length, level[i].length, scene);
+			                    addGoal(j, i, level.length, level[i].length);
 			                    break;
 			            }
 
 					}
 				}
 				
+
+				// load boundary walls - only responds to physics if called here?? not sure why.
+				loadOuterWalls();
 
 				// add parent piece
 				scene.add(parent_piece);
@@ -206,13 +210,18 @@
 				 );
 
 				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
+				ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + 2*box_w;
+				ball.position.z = (box_w * (level[0].length/2) + box_w/2) - 2*box_h;
 				ball.position.y = 20;
 				ball.castShadow = true;
+
+				ball.addEventListener('collision', function(object) {
+					console.log("ball collision");
+
+					});
 				scene.add( ball );
 
 			}
-
-				
 
 
 				function addFloor(x, z, rows, cols) {
@@ -222,7 +231,8 @@
 					// adjustments so that parent piece is in center of gamefield for rotation purposes:
 					floor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
 					floor.position.z = -(box_h * (level[0].length/2) - box_h/2) + (z * box_h);
-					
+
+					floor.receiveShadow = true;
 					parent_piece.add(floor);
 
 				}
@@ -247,6 +257,42 @@
 				}
 
 				function addGoal(x, z, rows, cols){
+
+				}
+
+				function loadOuterWalls() {
+					// outer wall material - basic material for no shadow casting
+					var wall_material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
+					0.9, 
+					0
+					);
+
+					// outer wall geometries
+					var wall_w = 5, wall_d = 10, wall_h = 150;
+					var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
+					var horizWall = new THREE.BoxGeometry(wall_h+(2*wall_w), wall_d, wall_w);
+
+					// add walls
+					leftWall = new Physijs.BoxMesh(vertWall,wall_material, 0);
+					leftWall.position.x = -(box_w * (level[0].length/2) + wall_w/2);
+					leftWall.position.y = wall_d/2;
+					parent_piece.add(leftWall);
+
+					rightWall = new Physijs.BoxMesh(vertWall,wall_material, 0);
+					rightWall.position.x = (box_w * (level[0].length/2) + wall_w/2);
+					rightWall.position.y = wall_d/2;
+					parent_piece.add(rightWall);
+
+					topWall = new Physijs.BoxMesh(horizWall,wall_material, 0);
+					topWall.position.z = (box_h * (level[0].length/2) + wall_w/2);
+					topWall.position.y = wall_d/2;
+					parent_piece.add(topWall);
+
+					bottomWall = new Physijs.BoxMesh(horizWall,wall_material, 0);
+					bottomWall.position.z = -(box_h * (level[0].length/2) + wall_w/2);
+					bottomWall.position.y = wall_d/2;
+					parent_piece.add(bottomWall);
 
 				}
 
