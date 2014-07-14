@@ -38,6 +38,7 @@
 		var camera, scene, renderer, ball;
 		var mouseX = 0, mouseY = 0;
 		var tempRotX = 0, tempRotZ = 0;
+		var planeCollide = false;
 
 
 		var windowHalfX = window.innerWidth / 2;
@@ -62,6 +63,7 @@
 		loadGround();
 		//loadOuterWalls();
 		loadBall();
+		loadResetPlane();
 		animate();
 
 // ********* FUNCTIONS **********
@@ -99,7 +101,7 @@
 				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 2000 );
 				camera.position.x = 0;
 				camera.position.y = 180;
-				camera.position.z = 200;
+				camera.position.z = 100;
 			}
 
 
@@ -219,6 +221,8 @@
 					console.log("ball collision");
 
 					});
+
+				loadResetPlane();
 				scene.add( ball );
 
 			}
@@ -293,6 +297,25 @@
 					bottomWall.position.z = -(box_h * (level[0].length/2) + wall_w/2);
 					bottomWall.position.y = wall_d/2;
 					parent_piece.add(bottomWall);
+
+				}
+
+				function loadResetPlane() {
+					var plane_geom = new THREE.BoxGeometry(600,1,600);
+					var plane_material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+					resetPlane = new Physijs.BoxMesh(plane_geom,plane_material, 0);
+
+					resetPlane.position.y = -30;
+
+					resetPlane.addEventListener('collision', function(object) {
+					console.log("plane collision");
+					planeCollide = true;
+					ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + 2*box_w;
+					ball.position.z = (box_w * (level[0].length/2) + box_w/2) - 2*box_h;
+					ball.position.y = 20;
+
+					});
+					scene.add(resetPlane);
 
 				}
 
@@ -403,6 +426,13 @@
 
 				parent_piece.rotation.z = tempRotZ;
 				parent_piece.rotation.x = tempRotX;
+
+				if (planeCollide == true) {
+				ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + 2*box_w;
+				ball.position.z = (box_w * (level[0].length/2) + box_w/2) - 2*box_h;
+				ball.position.y = 20;
+				planeCollide = false;
+				}
 				
 				/*
 				ground.rotation.z = tempRotZ;
@@ -451,6 +481,11 @@
 		[0, 0, 0, 2, 0, 0, 0, 1, 2, 0],
 		[0, 0, 0, 1, 0, 0, 0, 1, 0, 0]
 		]
+	}
+
+	function getRadians(dgrs){
+	var degrees = (Math.PI/180)*dgrs;
+	return degrees;
 	}
 
 		</script>
