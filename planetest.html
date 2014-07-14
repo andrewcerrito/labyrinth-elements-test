@@ -38,6 +38,11 @@
 		var camera, scene, renderer, ball;
 		var mouseX = 0, mouseY = 0;
 		var tempRotX = 0, tempRotZ = 0;
+
+		// set limit to board rotations
+		var rotLimitX = 0.5, rotLimitZ = 0.5;
+
+
 		var planeCollide = false;
 
 
@@ -206,23 +211,25 @@
 			function loadBall() {
 				var ball_geometry = new THREE.SphereGeometry(5,32,32);
 				var ball_material = Physijs.createMaterial(
-					new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+					new THREE.MeshLambertMaterial({map: THREE.ImageUtils.loadTexture('textures/metal.jpg')}),
 				 	0.9, // friction
 				 	0  // bounciness
 				 );
 
 				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
-				ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + 2*box_w;
-				ball.position.z = (box_w * (level[0].length/2) + box_w/2) - 2*box_h;
+				ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + box_w;
+				ball.position.z = (box_w * (level[0].length/2) + box_w/2) - box_h;
 				ball.position.y = 100;
 				ball.castShadow = true;
 
 				ball.addEventListener('collision', function(object) {
-					console.log("ball collision");
+					//console.log("ball collision");
 
 					});
 
+				// load plane underneath board that knows when ball falls through
 				loadResetPlane();
+
 				scene.add( ball );
 
 			}
@@ -243,7 +250,7 @@
 
 				function addWall(x, z, rows, cols) {
 					// wall tile geometry
-					var wall_w = 15, wall_d = 10, wall_h = 15;
+					var wall_w = 15, wall_d = 8, wall_h = 15;
 					var wall_geometry = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
 
 					var wall = new Physijs.BoxMesh(wall_geometry, box_material, 0);
@@ -308,7 +315,7 @@
 					resetPlane.position.y = -400;
 
 					resetPlane.addEventListener('collision', function(object) {
-					console.log("plane collision");
+					//console.log("plane collision");
 					planeCollide = true;
 					});
 					scene.add(resetPlane);
@@ -423,6 +430,9 @@
 				parent_piece.rotation.z = tempRotZ;
 				parent_piece.rotation.x = tempRotX;
 
+				parent_piece.rotation.z -= ax/600;
+				parent_piece.rotation.x += ay/600;
+
 				if (planeCollide == true) {
 				scene.remove(parent_piece);
 				scene.remove(ball);
@@ -431,17 +441,19 @@
 				planeCollide = false;
 				}
 				
-				/*
-				ground.rotation.z = tempRotZ;
-				ground.rotation.x = tempRotX;
 
-				ground.__dirtyRotation = true; // needed for physijs rotation
-				// ground.rotation.z -= ax/600;
-				// ground.rotation.x += ay/600;
 
-				tempRotZ -= ax/1000;
-				tempRotX += ay/600;
-				*/
+				tempRotZ -= ax/900;
+				tempRotX += ay/500;
+				console.log(" X rotation: " + tempRotX + "   Z rotation: " + tempRotZ);
+				
+				// rotation limits on game board
+				if (tempRotZ >= rotLimitZ) tempRotZ = rotLimitZ;
+				else if (tempRotZ <= -rotLimitZ) tempRotZ = -rotLimitZ;
+				
+				if (tempRotX  >= rotLimitX) tempRotX = rotLimitX;
+				else if (tempRotX <= -rotLimitX) tempRotX = -rotLimitX;
+
 				
 				// mouse camera movement:
 
@@ -461,8 +473,8 @@
 				else if (name == "tilt_y") {
 					ay = parseFloat(value);
 				}
-				console.log("test");
-				console.log("x: " + ax + " y: " + ay );
+				//console.log("test");
+				//console.log("x: " + ax + " y: " + ay );
 			}
 
 	function levelLayout() {
@@ -474,8 +486,8 @@
 		[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
 		[0, 0, 0, 2, 0, 1, 1, 0, 2, 0],
 		[1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
-		[0, 0, 0, 2, 0, 0, 0, 1, 2, 0],
+		[0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+		[0, 1, 0, 2, 0, 0, 0, 1, 2, 0],
 		[0, 0, 0, 1, 0, 0, 0, 1, 0, 0]
 		]
 	}
