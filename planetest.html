@@ -12,7 +12,6 @@
 		<style>canvas {width: 100%; height: 100%}</style>
 	</head>
 
-	
 	<body>
 
 		<script src="js/three.min.js"></script>
@@ -66,7 +65,6 @@
 		loadCamera();
 		loadScene();
 		loadGround();
-		//loadOuterWalls();
 		loadBall();
 		loadResetPlane();
 		animate();
@@ -160,7 +158,14 @@
 				var subtract_bsp = box_bsp.subtract(cyl_bsp);
 				var result = subtract_bsp.toGeometry();
 
+				// creates ground with hole:
+				//ground = new Physijs.BoxMesh(result, box_material, 0);
+
+				// ground without hole:
+				scene.add(ground);
+
 */				
+
 			function loadGround() {
 				
 				// load level layout
@@ -181,14 +186,7 @@
 
 				// define piece to parent entire rest of board to, in order to make rotation less of a headache
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
-				//parent_piece = new Physijs.BoxMesh(box, new THREE.MeshBasicMaterial({color: 0xFFFFFF}), 0);
-				//parent_piece.__dirtyPosition = true;
-				//parent_piece.__dirtyRotation = true;
-				//parent_piece.position.x = (box_w * (level[0].length/2));
-				//parent_piece.position.x = -level[0].length * 5;
-    			
-    			
-				
+
 				// read through level layout array and create rest of elements accordingly. parent them to parent piece
 				for (var i = 0; i < level.length; i++) {
 					for (var j = 0; j < level[i].length; j++) {
@@ -298,9 +296,6 @@
 					var vertWall = new THREE.BoxGeometry(vert_w, vert_d, vert_h);
 					var horizWall = new THREE.BoxGeometry(horiz_w, horiz_d, horiz_h);
 
-					//var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
-					//var horizWall = new THREE.BoxGeometry(wall_h+(2*wall_w), wall_d, wall_w);
-
 					// add walls
 					leftWall = new Physijs.BoxMesh(vertWall,wall_material, 0);
 					leftWall.position.x = -(box_w * (level[0].length/2) + vert_w/2);
@@ -341,56 +336,7 @@
 					});
 					scene.add(resetPlane);
 
-				}
-
-/*
-				ground = new Physijs.BoxMesh(box,box_material,0);
-				ground.receiveShadow = true;
-*/
-
-				// adding walls as child objects to ground
-
-				// wall material
-				// var wall_material = Physijs.createMaterial(
-				// 	new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
-				// 	0.9, 
-				// 	0
-				// );
-
-				// wall geometries & meshes
-				
-				/*
-				var wall_w = 5, wall_d = 10, wall_h = 150;
-				var vertWall = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
-				var horizWall = new THREE.BoxGeometry(wall_h-(2*wall_w), wall_d, wall_w);
-				
-				var leftWall = new Physijs.BoxMesh(vertWall,wall_material);
-				leftWall.position.x = ground.position.x - (box_w/2 - wall_w/2);
-				leftWall.position.y = ground.position.y + wall_d/2;
-				ground.add(leftWall);
-
-				var rightWall = new Physijs.BoxMesh(vertWall,wall_material);
-				rightWall.position.x = ground.position.x + (box_w/2 - wall_w/2);
-				rightWall.position.y = ground.position.y + wall_d/2;
-				ground.add(rightWall);
-
-				var topWall = new Physijs.BoxMesh(horizWall,wall_material);
-				topWall.position.z = ground.position.z - (box_h/2 - wall_w/2);
-				topWall.position.y = ground.position.y + wall_d/2;
-				ground.add(topWall);
-
-				var bottomWall = new Physijs.BoxMesh(horizWall,wall_material);
-				bottomWall.position.z = ground.position.z + (box_h/2 - wall_w/2);
-				bottomWall.position.y = ground.position.y + wall_d/2;
-				ground.add(bottomWall);
-
-
-				// creates ground with hole:
-				//ground = new Physijs.BoxMesh(result, box_material, 0);
-
-				// ground without hole:
-				scene.add(ground);
-*/			
+				}		
 
 			function onWindowResize() {
 
@@ -445,28 +391,27 @@
 
 			function render() {
 
+				if (planeCollide == true) {
+					scene.remove(parent_piece);
+					scene.remove(ball);
+					loadGround();
+					loadBall();
+					planeCollide = false;
+				}
+
 				parent_piece.__dirtyPosition = true;
 				parent_piece.__dirtyRotation = true;
 
 				parent_piece.rotation.z = tempRotZ;
 				parent_piece.rotation.x = tempRotX;
 
-				parent_piece.rotation.z -= ax/600;
-				parent_piece.rotation.x += ay/600;
-
-				if (planeCollide == true) {
-				scene.remove(parent_piece);
-				scene.remove(ball);
-				loadGround();
-				loadBall();
-				planeCollide = false;
-				}
+				//parent_piece.rotation.z -= ax/600;
+				//parent_piece.rotation.x += ay/600;
 				
-
-
+				// rotation from phone tilt
 				tempRotZ -= ax/900;
 				tempRotX += ay/500;
-				console.log(" X rotation: " + tempRotX + "   Z rotation: " + tempRotZ);
+				//console.log(" X rotation: " + tempRotX + "   Z rotation: " + tempRotZ);
 				
 				// rotation limits on game board
 				if (tempRotZ >= rotLimitZ) tempRotZ = rotLimitZ;
@@ -474,12 +419,10 @@
 				
 				if (tempRotX  >= rotLimitX) tempRotX = rotLimitX;
 				else if (tempRotX <= -rotLimitX) tempRotX = -rotLimitX;
-
 				
 				// mouse camera movement for debug:
-
-				camera.position.x += ( mouseX - camera.position.x ) * .05;
-				camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				//camera.position.x += ( mouseX - camera.position.x ) * .05;
+				//camera.position.y += ( - mouseY - camera.position.y ) * .05;
 				camera.lookAt( scene.position );
 
 				scene.simulate();  // run physics
@@ -488,14 +431,24 @@
 			}
 
 			function onStringMessage(name, value) {
+
+				var floatValue = parseFloat(value);
+				
 				if (name == "tilt_x") {
-					ax = parseFloat(value);
+					if (floatValue < -0.4 || floatValue > 0.4) {
+						ax = floatValue;
+					}
+					else ax = 0;
 				}
+
 				else if (name == "tilt_y") {
-					ay = parseFloat(value);
+					if (floatValue < -0.4 || floatValue > 0.4) {
+						ay = floatValue;
+					}
+					else ay = 0;
 				}
 				//console.log("test");
-				//console.log("x: " + ax + " y: " + ay );
+				console.log("x: " + ax + " y: " + ay );
 			}
 
 	function levelLayout() {
