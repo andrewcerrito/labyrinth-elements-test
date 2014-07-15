@@ -44,6 +44,8 @@
 
 		var planeCollide = false;
 
+		var goalFloor;
+
 
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
@@ -135,7 +137,7 @@
 			light.shadowBias = -.0001;
 			light.shadowMapWidth = light.shadowMapHeight = 1024;
 			light.shadowDarkness = .3;
-			light.shadowCameraVisible = true;
+			//light.shadowCameraVisible = true;
 			scene.add( light );
 
 			 }
@@ -186,6 +188,7 @@
 
 				// define piece to parent entire rest of board to, in order to make rotation less of a headache
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
+				parent_piece.name = "PARENT";
 
 				// read through level layout array and create rest of elements accordingly. parent them to parent piece
 				for (var i = 0; i < level.length; i++) {
@@ -214,6 +217,7 @@
 
 				// add parent piece
 				scene.add(parent_piece);
+
 			}
 
 
@@ -232,8 +236,11 @@
 				ball.castShadow = true;
 
 				ball.addEventListener('collision', function(object) {
-					//console.log("ball collision");
-
+					console.log("ball id: " + ball.id);
+					console.log("ball collision: object name " + object.name);
+					if (object.id == goalFloor.id) {
+						console.log("WOOHOO");
+						}
 					});
 
 				// load plane underneath board that knows when ball falls through
@@ -279,6 +286,41 @@
 				}
 
 				function addGoal(x, z, rows, cols){
+
+					
+					// floor tile
+					goalFloor = new Physijs.BoxMesh(box, box_material, 0);
+					goalFloor.name = "GOAL";
+					
+					goalFloor.addEventListener("collison", function(object) {
+						console.log("goal collision");
+					});
+
+					
+					// cylindrical light beam
+					var light_geom = new THREE.CylinderGeometry(box_w/2, box_h/2, 800);
+					var light_material = new THREE.MeshPhongMaterial({
+						opacity: 0.45,
+						transparent: true,
+						shininess: 0.5,
+						ambient: 0xffffff,
+						emissive: 0xffffff
+					});
+					var light = new THREE.Mesh(light_geom, light_material);
+
+					// adjustments so that parent piece is in center of gamefield for rotation purposes:
+					goalFloor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
+					goalFloor.position.z = -(box_h * (level.length/2) - box_h/2) + (z * box_h);
+
+					light.position.x = goalFloor.position.x;
+					light.position.z = goalFloor.position.z;
+
+					goalFloor.receiveShadow = true;
+
+					parent_piece.add(goalFloor);
+					console.log("goalFloor name: " + goalFloor.name);
+					console.log("parentPiece name: " + parent_piece.name);
+					parent_piece.add(light);
 
 				}
 
@@ -448,13 +490,13 @@
 					else ay = 0;
 				}
 				//console.log("test");
-				console.log("x: " + ax + " y: " + ay );
+				//console.log("x: " + ax + " y: " + ay );
 			}
 
 	function levelLayout() {
 		return [
 		[0, 1, 0, 0, 0, 2, 1, 0, 0, 0],
-		[0, 1, 0, 2, 0, 1, 1, 0, 3, 0],
+		[0, 1, 0, 2, 0, 1, 1, 0, 0, 0],
 		[0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
 		[0, 2, 0, 1, 1, 0, 2, 0, 1, 1],
 		[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -462,7 +504,7 @@
 		[1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
 		[0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
 		[0, 1, 0, 2, 0, 0, 0, 1, 2, 0],
-		[0, 0, 0, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
+		[3, 0, 0, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
 		]
 	}
 
