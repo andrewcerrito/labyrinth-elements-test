@@ -90,6 +90,8 @@
 				
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.setClearColor(0x87CEEB);
+				renderer.shadowMapEnabled = true;
+				renderer.shadowMapSoft = true;
 				container.appendChild( renderer.domElement );
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
@@ -116,23 +118,31 @@
 			scene = new Physijs.Scene();
 			scene.setGravity(new THREE.Vector3(0,-100,0)); 
 
-			var ambient = new THREE.AmbientLight( 0x101030 );
-				//scene.add( ambient );
-
-			var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-			directionalLight.position.set( 0, 10, 1);
-			directionalLight.castShadow = true;
-			directionalLight.shadowCameraVisible = true;
-			scene.add( directionalLight );
-			}
+			var ambient = new THREE.AmbientLight( 0x797979 );
+				scene.add( ambient );
 
 
-				// loading manager - unused for now
+			var light = new THREE.DirectionalLight( 0xFFFFFF );
+			light.intensity = 0.9;
+			light.exponent = 2.0;
+			light.position.set( 90, 80, -85 );
+			light.target.position.copy( scene.position );
+			light.castShadow = true;
+			light.shadowCameraLeft = -150;
+			light.shadowCameraTop = -150;
+			light.shadowCameraRight = 150;
+			light.shadowCameraBottom = 150;
+			light.shadowCameraNear = 20;
+			light.shadowCameraFar = 400;
+			light.shadowBias = -.0001;
+			light.shadowMapWidth = light.shadowMapHeight = 1024;
+			light.shadowDarkness = .3;
+			light.shadowCameraVisible = true;
+			scene.add( light );
 
-				// var manager = new THREE.LoadingManager();
-				// manager.onProgress = function ( item, loaded, total ) {
-				// console.log( item, loaded, total );
-				// };
+			 }
+
+
 
 /*
 				// ground surface - the bsp stuff is for putting a hole in the ground using ThreeCSG library,
@@ -211,7 +221,7 @@
 			function loadBall() {
 				var ball_geometry = new THREE.SphereGeometry(5,32,32);
 				var ball_material = Physijs.createMaterial(
-					new THREE.MeshLambertMaterial({map: THREE.ImageUtils.loadTexture('textures/metal.jpg')}),
+					new THREE.MeshPhongMaterial({map: THREE.ImageUtils.loadTexture('textures/metal.jpg')}),
 				 	0.9, // friction
 				 	0  // bounciness
 				 );
@@ -259,6 +269,8 @@
 					wall.position.x = -(wall_w * (level[0].length/2) - wall_w/2) + (x * wall_w);
 					wall.position.z = -(wall_h * (level[0].length/2) - wall_h/2) + (z * wall_h);
 					wall.position.y = wall_d/2;
+					wall.castShadow = true;
+					wall.receiveShadow = true;
 					parent_piece.add(wall);
 
 				}
@@ -288,21 +300,25 @@
 					leftWall = new Physijs.BoxMesh(vertWall,wall_material, 0);
 					leftWall.position.x = -(box_w * (level[0].length/2) + wall_w/2);
 					leftWall.position.y = wall_d/2;
+					leftWall.castShadow = leftWall.receiveShadow = true;
 					parent_piece.add(leftWall);
 
 					rightWall = new Physijs.BoxMesh(vertWall,wall_material, 0);
 					rightWall.position.x = (box_w * (level[0].length/2) + wall_w/2);
 					rightWall.position.y = wall_d/2;
+					rightWall.castShadow = rightWall.receiveShadow = true;
 					parent_piece.add(rightWall);
 
 					topWall = new Physijs.BoxMesh(horizWall,wall_material, 0);
 					topWall.position.z = (box_h * (level[0].length/2) + wall_w/2);
 					topWall.position.y = wall_d/2;
+					topWall.castShadow = topWall.receiveShadow = true;
 					parent_piece.add(topWall);
 
 					bottomWall = new Physijs.BoxMesh(horizWall,wall_material, 0);
 					bottomWall.position.z = -(box_h * (level[0].length/2) + wall_w/2);
 					bottomWall.position.y = wall_d/2;
+					bottomWall.castShadow = bottomWall.receiveShadow = true;
 					parent_piece.add(bottomWall);
 
 				}
@@ -455,10 +471,10 @@
 				else if (tempRotX <= -rotLimitX) tempRotX = -rotLimitX;
 
 				
-				// mouse camera movement:
+				// mouse camera movement for debug:
 
-				//camera.position.x += ( mouseX - camera.position.x ) * .05;
-				//camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				camera.position.x += ( mouseX - camera.position.x ) * .05;
+				camera.position.y += ( - mouseY - camera.position.y ) * .05;
 				camera.lookAt( scene.position );
 
 				scene.simulate();  // run physics
