@@ -42,7 +42,7 @@
 		var rotLimitX = 0.5, rotLimitZ = 0.5;
 
 
-		var resetGame = false;
+		var planeCollide = false;
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
@@ -238,7 +238,7 @@
 				ball.addEventListener('collision', function(object) {
 					console.log("ball id: " + ball.id);
 					console.log("ball collision: object name " + object.name);
-					if (object.name == parent_piece2.name) {
+					if (object.id == goalFloor.id) {
 						console.log("WOOHOO");
 						}
 					});
@@ -374,7 +374,7 @@
 
 					resetPlane.addEventListener('collision', function(object) {
 					//console.log("plane collision");
-					resetGame = true;
+					planeCollide = true;
 					});
 					scene.add(resetPlane);
 
@@ -433,13 +433,13 @@
 
 			function render() {
 
-				if (resetGame == true) {
+				if (planeCollide == true) {
 					scene.remove(parent_piece);
 					scene.remove(parent_piece2);
 					scene.remove(ball);
 					loadGround();
 					loadBall();
-					resetGame = false;
+					planeCollide = false;
 				}
 
 				parent_piece.__dirtyPosition = true;
