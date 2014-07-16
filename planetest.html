@@ -43,10 +43,6 @@
 
 
 		var planeCollide = false;
-
-		var goalFloor;
-
-
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
@@ -189,6 +185,9 @@
 				// define piece to parent entire rest of board to, in order to make rotation less of a headache
 				parent_piece = new Physijs.BoxMesh(box, box_material, 0);
 				parent_piece.name = "PARENT";
+				// separate parent piece for goal object
+				parent_piece2 = new Physijs.BoxMesh(box, box_material,0);
+				parent_piece2.name = "GOAL";
 
 				// read through level layout array and create rest of elements accordingly. parent them to parent piece
 				for (var i = 0; i < level.length; i++) {
@@ -217,6 +216,7 @@
 
 				// add parent piece
 				scene.add(parent_piece);
+				scene.add(parent_piece2);
 
 			}
 
@@ -287,16 +287,20 @@
 
 				function addGoal(x, z, rows, cols){
 
+					var goalBox = new THREE.BoxGeometry(box_w, box_d, box_h);
 					
 					// floor tile
-					goalFloor = new Physijs.BoxMesh(box, box_material, 0);
-					goalFloor.name = "GOAL";
-					
+					goalFloor = new Physijs.BoxMesh(goalBox, box_material, 0);
+
 					goalFloor.addEventListener("collison", function(object) {
 						console.log("goal collision");
 					});
 
-					
+					// adjustments so that parent piece is in center of gamefield for rotation purposes:
+					goalFloor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
+					goalFloor.position.z = -(box_h * (level.length/2) - box_h/2) + (z * box_h);
+
+
 					// cylindrical light beam
 					var light_geom = new THREE.CylinderGeometry(box_w/2, box_h/2, 800);
 					var light_material = new THREE.MeshPhongMaterial({
@@ -308,19 +312,15 @@
 					});
 					var light = new THREE.Mesh(light_geom, light_material);
 
-					// adjustments so that parent piece is in center of gamefield for rotation purposes:
-					goalFloor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
-					goalFloor.position.z = -(box_h * (level.length/2) - box_h/2) + (z * box_h);
-
 					light.position.x = goalFloor.position.x;
 					light.position.z = goalFloor.position.z;
 
 					goalFloor.receiveShadow = true;
 
-					parent_piece.add(goalFloor);
 					console.log("goalFloor name: " + goalFloor.name);
 					console.log("parentPiece name: " + parent_piece.name);
-					parent_piece.add(light);
+					parent_piece2.add(goalFloor);
+					parent_piece2.add(light);
 
 				}
 
@@ -435,6 +435,7 @@
 
 				if (planeCollide == true) {
 					scene.remove(parent_piece);
+					scene.remove(parent_piece2);
 					scene.remove(ball);
 					loadGround();
 					loadBall();
@@ -443,12 +444,13 @@
 
 				parent_piece.__dirtyPosition = true;
 				parent_piece.__dirtyRotation = true;
-
 				parent_piece.rotation.z = tempRotZ;
 				parent_piece.rotation.x = tempRotX;
 
-				//parent_piece.rotation.z -= ax/600;
-				//parent_piece.rotation.x += ay/600;
+				parent_piece2.__dirtyPosition = true;
+				parent_piece2.__dirtyRotation = true;
+				parent_piece2.rotation.z = tempRotZ;
+				parent_piece2.rotation.x = tempRotX;
 				
 				// rotation from phone tilt
 				tempRotZ -= ax/900;
