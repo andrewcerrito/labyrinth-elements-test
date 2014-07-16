@@ -238,7 +238,7 @@
 				ball.addEventListener('collision', function(object) {
 					console.log("ball id: " + ball.id);
 					console.log("ball collision: object name " + object.name);
-					if (object.id == goalFloor.id) {
+					if (object.name == parent_piece2.name) {
 						console.log("WOOHOO");
 						}
 					});
@@ -471,6 +471,7 @@
 
 				scene.simulate();  // run physics
 				renderer.render( scene, camera );  // render scene
+				console.log("render is looping");
 
 			}
 
@@ -506,7 +507,7 @@
 		[1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
 		[0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
 		[0, 1, 0, 2, 0, 0, 0, 1, 2, 0],
-		[3, 0, 0, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
+		[0, 0, 3, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
 		]
 	}
 
