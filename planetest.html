@@ -38,11 +38,15 @@
 		var mouseX = 0, mouseY = 0;
 		var tempRotX = 0, tempRotZ = 0;
 
+		// game condition booleans
+		var resetGame = false;
+		var pausePhysics = false;
+		var skyBall = false;
+
 		// set limit to board rotations
 		var rotLimitX = 0.5, rotLimitZ = 0.5;
 
 
-		var resetGame = false;
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
@@ -188,6 +192,7 @@
 				// separate parent piece for goal object
 				parent_piece2 = new Physijs.BoxMesh(box, box_material,0);
 				parent_piece2.name = "GOAL";
+				
 
 				// read through level layout array and create rest of elements accordingly. parent them to parent piece
 				for (var i = 0; i < level.length; i++) {
@@ -230,16 +235,28 @@
 				 );
 
 				ball = new Physijs.SphereMesh(ball_geometry, ball_material,100);
+				// starting position is bottom left corner
 				ball.position.x = -(box_w * (level[0].length/2) + box_w/2) + box_w;
 				ball.position.z = (box_w * (level[0].length/2) + box_w/2) - box_h;
 				ball.position.y = 100;
+				
+				// center position for debug
+				//ball.position.x = ball.position.z = 0;
+				
 				ball.castShadow = true;
 
+				// ball collision detection with goal piece
 				ball.addEventListener('collision', function(object) {
-					console.log("ball id: " + ball.id);
 					console.log("ball collision: object name " + object.name);
+
+					// goal piece shares name with unique piece it's parented to
 					if (object.name == parent_piece2.name) {
-						console.log("WOOHOO");
+
+						// making sure it's not the actual parent piece in the center. for now, goal can't be in center of map, not ideal:
+						if (ball.position.x > -box_w && ball.position.x < box_w && ball.position.z > -box_h && ball.position.z < box_h) {
+							console.log("false positive - center parent piece");
+							}
+						else winCondition();
 						}
 					});
 
@@ -268,13 +285,13 @@
 					// wall tile geometry
 					var wall_w = 15, wall_d = 8, wall_h = 15;
 					var wall_geometry = new THREE.BoxGeometry(wall_w, wall_d, wall_h);
-
 					var wall = new Physijs.BoxMesh(wall_geometry, box_material, 0);
 
 					// same adjustments for rotation as above
 					wall.position.x = -(wall_w * (level[0].length/2) - wall_w/2) + (x * wall_w);
 					wall.position.z = -(wall_h * (level[0].length/2) - wall_h/2) + (z * wall_h);
 					wall.position.y = wall_d/2;
+					
 					wall.castShadow = true;
 					wall.receiveShadow = true;
 					parent_piece.add(wall);
@@ -292,15 +309,10 @@
 					// floor tile
 					goalFloor = new Physijs.BoxMesh(goalBox, box_material, 0);
 
-					goalFloor.addEventListener("collison", function(object) {
-						console.log("goal collision");
-					});
-
 					// adjustments so that parent piece is in center of gamefield for rotation purposes:
 					goalFloor.position.x = -(box_w * (level[0].length/2) - box_w/2) + (x * box_w);
 					goalFloor.position.z = -(box_h * (level.length/2) - box_h/2) + (z * box_h);
-
-
+					
 					// cylindrical light beam
 					var light_geom = new THREE.CylinderGeometry(box_w/2, box_h/2, 800);
 					var light_material = new THREE.MeshPhongMaterial({
@@ -325,7 +337,7 @@
 				}
 
 				function loadOuterWalls() {
-					// outer wall material - basic material for no shadow casting
+					// outer wall material
 					var wall_material = Physijs.createMaterial(
 					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
 					0.9, 
@@ -392,7 +404,7 @@
 
 			}
 
-			// KEYBOARD DEBUG CONTROLS - COMMENT OUT LATER
+			// keyboard controls for debugging purposes
 			function doKeyDown (e){
 
 				// W: tilt phone up (neg y)
@@ -416,10 +428,13 @@
 			}
 
 			function onDocumentMouseMove( event ) {
-
 				mouseX = ( event.clientX - windowHalfX ) / 2;
 				mouseY = ( event.clientY - windowHalfY ) / 2;
+			}
 
+			function winCondition() {
+				console.log("win function triggered");
+				skyBall = true;
 			}
 
 			//
@@ -432,6 +447,8 @@
 			}
 
 			function render() {
+
+				scene.updateMatrixWorld();
 
 				if (resetGame == true) {
 					scene.remove(parent_piece);
@@ -467,12 +484,28 @@
 				// mouse camera movement for debug:
 				//camera.position.x += ( mouseX - camera.position.x ) * .05;
 				//camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				
 				camera.lookAt( scene.position );
 
-				scene.simulate();  // run physics
-				renderer.render( scene, camera );  // render scene
-				console.log("render is looping");
+				// run physics if pause command is false
+				if (!pausePhysics) {
+					scene.simulate();
+				} 
 
+				// if ball reaches goalpiece, beam into sky and reset game (victory)
+				if (skyBall) {
+					if (ball.position.y < 300) {
+						pausePhysics = true;
+						ball.position.y +=3;
+					}
+					else if (ball.position.y >=300) {
+						pausePhysics = false;
+						skyBall = false;
+						resetGame = true;
+					}
+				}
+
+				renderer.render( scene, camera );  // render scene
 			}
 
 			function onStringMessage(name, value) {
@@ -492,22 +525,21 @@
 					}
 					else ay = 0;
 				}
-				//console.log("test");
 				//console.log("x: " + ax + " y: " + ay );
 			}
 
 	function levelLayout() {
 		return [
-		[0, 1, 0, 0, 0, 2, 1, 0, 0, 0],
-		[0, 1, 0, 2, 0, 1, 1, 0, 0, 0],
-		[0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
+		[0, 1, 0, 0, 0, 2, 1, 2, 3, 0],
+		[0, 1, 0, 2, 0, 1, 1, 0, 0, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0, 2, 1],
 		[0, 2, 0, 1, 1, 0, 2, 0, 1, 1],
 		[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
 		[0, 0, 0, 2, 0, 1, 1, 0, 2, 0],
-		[1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
-		[0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+		[1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+		[0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
 		[0, 1, 0, 2, 0, 0, 0, 1, 2, 0],
-		[0, 0, 3, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
+		[0, 0, 0, 1, 0, 0, 0, 1, 0, 0], // end of 10th row
 		]
 	}
 
