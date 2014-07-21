@@ -1,0 +1,7 @@
+#canvas2D{
+  background-color: transparent;
+  position: absolute;
+  left: 200;
+  top: 200;
+  z-index: 5;
+}

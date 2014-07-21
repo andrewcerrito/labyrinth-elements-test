@@ -9,11 +9,14 @@
 		<title>3D Table Test</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		 <link rel="stylesheet" type="text/css" href="style.css">
 		<style>canvas {width: 100%; height: 100%}</style>
 	</head>
-
 	<body>
+	<canvas id="canvas2D" width="500" height="500"></canvas>
 
+
+	<!-- <SECTION><canvas id="timer_canvas" width="400" height="400"></canvas></SECTION> -->
 		<script src="js/three.min.js"></script>
 		<script src="js/Detector.js"></script>
 		<script src="js/physi.js"></script>
@@ -46,9 +49,12 @@
 		// set limit to board rotations
 		var rotLimitX = 0.5, rotLimitZ = 0.5;
 
-
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
+
+		startTime = new Date();
+
+		var bestTime = 999;
 
 		// spacebrew stuff
 		var ax = 0, ay = 0;
@@ -56,7 +62,9 @@
 		var sb = new Spacebrew.Client("50.112.244.54", "labyrinth prototype ");
 		sb.addSubscribe("tilt_x", "string");
 		sb.addSubscribe("tilt_y", "string");
+		sb.addSubscribe("resetBoolean", "boolean");
 		sb.onStringMessage = onStringMessage;
+		sb.onBooleanMessage = onBooleanMessage;
 		sb.connect();
 		console.log("sb connect");
 
@@ -66,19 +74,31 @@
 		init();
 		loadCamera();
 		loadScene();
-		loadGround();
 		loadBall();
+		loadGround();
 		loadResetPlane();
+		loadTimer();
 		animate();
 
 // ********* FUNCTIONS **********
 
 			function init() {
 
+				// load level layout
+				level = levelLayout();
+				console.log ("row length:" + level[0].length + "  array length: " + level.length);
+
+				box_w = 15, box_d = 1, box_h = 15;
+
+				startTime = new Date();
+
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
 				// renderer and listeners
+
+				canvas2D = document.getElementById('canvas2D');
+				
 
 				// Detect for WebGL capability - if not, use canvas renderer
 				if (Detector.webgl){
@@ -169,11 +189,6 @@
 */				
 
 			function loadGround() {
-				
-				// load level layout
-				level = levelLayout();
-				console.log ("row length:" + level[0].length + "  array length: " + level.length);
-		
 				// shared ground + wall material
 				box_material = Physijs.createMaterial(
 					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('textures/balsa.jpg') }), 
@@ -183,7 +198,7 @@
 
 				
 				// ground tile geometry
-				box_w = 15, box_d = 1, box_h = 15;
+
 				box = new THREE.BoxGeometry(box_w, box_d, box_h);
 
 				// define piece to parent entire rest of board to, in order to make rotation less of a headache
@@ -390,7 +405,66 @@
 					});
 					scene.add(resetPlane);
 
-				}		
+				}	
+
+				function loadTimer() {
+					text1 = document.createElement("div");
+					text1.style.position = 'absolute';
+					text1.style.font = "24px Archer-ExtraLight";
+					text1.style.color = "white";
+					text1.style.zIndex = 1;   
+					text1.style.width = 100;
+					text1.style.height = 100;
+					text1.style.backgroundColor = "transparent";
+					text1.innerHTML = "Time Elapsed: "
+					text1.style.top = 20 + 'px';
+					text1.style.left = 20 + 'px';
+					text1.id = "elapsedtime";
+					document.body.appendChild(text1);
+
+					text2 = document.createElement("div");
+					text2.style.position = 'absolute';
+					text2.style.font = "36px Archer-Medium";
+					text2.style.color = "white";
+					text2.style.zIndex = 1;    
+					text2.style.width = 100;
+					text2.style.height = 100;
+					text2.style.backgroundColor = "transparent";
+					text2.innerHTML = startTime.getSeconds();
+					text2.style.top = 50 + 'px';
+					text2.style.left = 45 + 'px';
+					text2.id = "countdown";
+					document.body.appendChild(text2);
+
+					text3 = document.createElement("div");
+					text3.style.position = 'absolute';
+					text3.style.font = "24px Archer-ExtraLight";
+					text3.style.color = "white";
+					text3.style.zIndex = 1;    
+					text3.style.width = 100;
+					text3.style.height = 100;
+					text3.style.backgroundColor = "transparent";
+					text3.innerHTML = "Best Time:"
+					text3.style.top = 110 + 'px';
+					text3.style.left = 20 + 'px';
+					text3.id = "bestheader";
+					document.body.appendChild(text3);
+
+					text4 = document.createElement("div");
+					text4.style.position = 'absolute';
+					text4.style.font = "36px Archer-Medium";
+					text4.style.color = "white";
+					text4.style.zIndex = 1;    
+					text4.style.width = 100;
+					text4.style.height = 100;
+					text4.style.backgroundColor = "transparent";
+					text4.innerHTML = " ";
+					text4.style.top = 140 + 'px';
+					text4.style.left = 45 + 'px';
+					text4.id = "besttime";
+					document.body.appendChild(text4);
+
+				}	
 
 			function onWindowResize() {
 
@@ -434,21 +508,32 @@
 
 			function winCondition() {
 				console.log("win function triggered");
+				if (seconds < bestTime) bestTime = seconds;
 				skyBall = true;
 			}
 
 			//
 
 			function animate() {
-
 				requestAnimationFrame( animate );
 				render();
-
 			}
 
 			function render() {
-
 				scene.updateMatrixWorld();
+
+
+				// update timer
+				var currentTime = new Date();
+				seconds = (currentTime.getTime() - startTime.getTime())/1000;
+				seconds = Math.round(seconds*10)/10;
+				document.getElementById("countdown").innerHTML = seconds;
+
+				// update best time (if there is one)
+				if (bestTime < 999) {
+					document.getElementById("besttime").innerHTML = bestTime;
+				}
+				
 
 				if (resetGame == true) {
 					scene.remove(parent_piece);
@@ -457,6 +542,7 @@
 					loadGround();
 					loadBall();
 					resetGame = false;
+					startTime = new Date();
 				}
 
 				parent_piece.__dirtyPosition = true;
@@ -504,7 +590,7 @@
 						resetGame = true;
 					}
 				}
-
+				//renderer2D.render();
 				renderer.render( scene, camera );  // render scene
 			}
 
@@ -526,6 +612,15 @@
 					else ay = 0;
 				}
 				//console.log("x: " + ax + " y: " + ay );
+			}
+
+			function onBooleanMessage(name,value) {
+				if (name == "resetBoolean") {
+					if (value == true) {
+						console.log("GONNA RESET NOW");
+						location.reload();
+					}
+				}
 			}
 
 	function levelLayout() {
